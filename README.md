@@ -1,0 +1,2 @@
+# UST
+Universidad Santo Tomás
