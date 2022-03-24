@@ -4,16 +4,17 @@ select
         u.idphone fono,
         u.nmuseremail correo,
         'por declarar' conflicto,
+		'por evaluar' evaluacion,
         d.iddepartment,
-        d.nmdepartment               
+        d.nmdepartment          
     from
-        aduser u                          
+        aduser u                     
     left join
-        aduserdeptpos udp                                                                  
-            on udp.cduser = u.cduser                         
+        aduserdeptpos udp                                                     
+            on udp.cduser = u.cduser                    
     LEFT  join
-        addepartment d                                                                  
-            on udp.cddepartment = d.cddepartment               
+        addepartment d                                                     
+            on udp.cddepartment = d.cddepartment          
     where
-        udp.FGDEFAULTDEPTPOS = 1          
+        udp.FGDEFAULTDEPTPOS = 1 
         and   u.fguserenabled = 1
