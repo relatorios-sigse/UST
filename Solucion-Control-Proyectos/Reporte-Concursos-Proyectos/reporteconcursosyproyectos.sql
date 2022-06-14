@@ -9,6 +9,7 @@ Panel de análisis: REPCONPRO - Reporte de Concursos y Proyectos
         
 Modificaciones: 
 08-06-2022. Andrés Del Río. Ajuste de registros de ideas y proyectos.
+14-06-2022. Andrés Del Río. Inclusión de columna "adjudicacion" y "presupuesto_cumple"
 
 230 - concurso
 244 - gestion proyecto
@@ -39,7 +40,9 @@ Modificaciones:
         PROYECTO.estado_idea,
         PROYECTO.descripcion_idea_proy,
         PROYECTO.admisibilidad,
+        PROYECTO.adjudicacion,
         PROYECTO.promedio_eval_tecnica,
+        EVALFINA.presupuesto_cumple,
         PROYECTO.cantidad_idea_proy,
         PROYECTO.situacion_idea_proy,
         PROYECTO.plazo_idea_proy,
@@ -163,6 +166,7 @@ Modificaciones:
                 FORMPROY.idconcurso id_wkf_concurso,
                 FORMPROY.texto1 descripcion_idea_proy,
                 FORMPROY.defadmi admisibilidad,
+                FORMPROY.adjuproy adjudicacion,
                 FORMPROY.promeval promedio_eval_tecnica,
 
                 CASE WFP.FGSTATUS 
@@ -330,6 +334,76 @@ Modificaciones:
                 WFP.CDPROCESSMODEL = 246
                 AND WFP.FGSTATUS <= 5
         ) EVALUACION ON EVALUACION.id_wkf_proyecto = PROYECTO.id_wkf_idea_proy
+LEFT JOIN
+(SELECT
+                WFP.idprocess id_wkf_eval_fina,
+                WFP.nmprocess titulo_wkf_eval_fina,
+                WP.idprocess id_wkf_proyecto,
+                CASE WFP.FGSTATUS 
+                    WHEN 1 THEN '#{103131}' 
+                    WHEN 2 THEN '#{107788}' 
+                    WHEN 3 THEN '#{104230}' 
+                    WHEN 4 THEN '#{100667}' 
+                    WHEN 5 THEN '#{200712}' 
+                END AS situacion_eval_tecn,
+
+                            CASE 
+                    WHEN WFP.FGCONCLUDEDSTATUS IS NOT NULL THEN (CASE 
+                        WHEN WFP.FGCONCLUDEDSTATUS=1 THEN '#{100900}' 
+                        WHEN WFP.FGCONCLUDEDSTATUS=2 THEN '#{100899}' 
+                    END) 
+                    ELSE (CASE 
+                        WHEN (( WFP.DTESTIMATEDFINISH > (CAST(<!%TODAY%> AS DATE) + COALESCE((SELECT
+                            QTDAYS 
+                        FROM
+                            ADMAILTASKEXEC 
+                        WHERE
+                            CDMAILTASKEXEC=(SELECT
+                                TASK.CDAHEAD 
+                            FROM
+                                ADMAILTASKREL TASK 
+                            WHERE
+                                TASK.CDMAILTASKREL=(SELECT
+                                    TBL.CDMAILTASKSETTINGS 
+                                FROM
+                                    CONOTIFICATION TBL))), 0))) 
+                        OR (WFP.DTESTIMATEDFINISH IS NULL)) THEN '#{100900}' 
+                        WHEN (( WFP.DTESTIMATEDFINISH=CAST( cast(now() as date) AS DATE) 
+                        AND WFP.NRTIMEESTFINISH >= (extract('minute' 
+                    FROM
+                        now()) + extract('hour' 
+                    FROM
+                        now()) * 60)) 
+                        OR (WFP.DTESTIMATEDFINISH > CAST( cast(now() as date) AS DATE))) THEN '#{201639}' 
+                        ELSE '#{100899}' 
+                    END) 
+                END AS plazo_eval_tecn,
+
+                GNRS.IDREVISIONSTATUS id_situacion_eval_tecn,
+                GNRS.NMREVISIONSTATUS nombre_situacion_eval_tecn,
+                CASE 
+                WHEN FORMEVAL.prescump = 1 THEN 'SI' 
+                WHEN FORMEVAL.prescump = 2 THEN 'NO' 
+                END presupuesto_cumple,     
+                1 as cantidad_eval_fina                               
+            FROM
+                WFPROCESS WFP 
+            JOIN
+                WFPROCESS WP 
+                    ON WFP.IDPARENTPROCESS = WP.IDOBJECT                                                          
+            LEFT JOIN
+                GNASSOCFORMREG REG                                            
+                    ON WFP.CDASSOCREG = REG.CDASSOC                                                           
+            LEFT JOIN
+                DYNgridevalfina FORMEVAL                                      
+                    ON REG.OIDENTITYREG=FORMEVAL.OID   
+            LEFT JOIN
+                GNREVISIONSTATUS GNRS 
+                    ON WFP.CDSTATUS=GNRS.CDREVISIONSTATUS             
+            WHERE
+                WFP.CDPROCESSMODEL = 247
+                AND WFP.FGSTATUS <= 5
+        ) EVALFINA ON EVALFINA.id_wkf_proyecto = PROYECTO.id_wkf_idea_proy
 
 UNION
 
@@ -363,7 +437,9 @@ UNION
                 END estado_idea,
                 '' descripcion_idea_proy,
                 '' admisibilidad,
+                '' adjudicacion,
                 NULL promedio_eval_tecnica,
+                '' presupuesto_cumple,
                 1 cantidad_idea_proy,
                 CASE WFP.FGSTATUS 
                     WHEN 1 THEN '#{103131}' 
