@@ -13,6 +13,7 @@ Modificaciones:
 20-06-2022. Andrés Del Río. Incidente. Registros duplicados en vista de postulaciones. Solución:
 consulta de columna "presupuesto_cumple" se hace como subconsulta en lugar de hacer JOIN.
 Esto bajo el supuesto que solamente puede haber una evaluación financiera en cada proyecto.
+20-06-2022. Andrés Del Río. Inclusión de campos timestamp "fecha_hora_apertura", "fecha_hora_cierre", "fecha_hora_ahora"
 
 230 - concurso
 244 - gestion proyecto
@@ -28,9 +29,12 @@ Esto bajo el supuesto que solamente puede haber una evaluación financiera en ca
         CONCURSO.tipo_evaluacion,
         CONCURSO.cantidad_concursos,
         CONCURSO.fecha_apertura,
+        CONCURSO.fecha_hora_apertura,
         CONCURSO.fecha_cierre,
+        CONCURSO.fecha_hora_cierre,
         CONCURSO.hora_cierre,
         CONCURSO.fecha_limite_consultas,
+        CONCURSO.fecha_hora_ahora,
         CONCURSO.situacion_concurso,
         CONCURSO.plazo_concurso,
         CONCURSO.id_situacion_concurso,
@@ -159,7 +163,10 @@ Esto bajo el supuesto que solamente puede haber una evaluación financiera en ca
             FORMCONC.fapertura fecha_apertura,
             FORMCONC.fcierre fecha_cierre,
             FORMCONC.horacierr hora_cierre,
-            FORMCONC.fconsulta fecha_limite_consultas                                           
+            FORMCONC.fconsulta fecha_limite_consultas,
+            TO_TIMESTAMP(TO_CHAR(FORMCONC.fapertura, 'YYYY-MM-DD') || ' ' || TO_CHAR(CAST('1970-01-01 00:00:00' AS timestamp) + (FORMCONC.horaaper || ' second')::INTERVAL - '3 hours'::INTERVAL,'HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS fecha_hora_apertura,
+			TO_TIMESTAMP(TO_CHAR(FORMCONC.fcierre, 'YYYY-MM-DD') || ' ' || TO_CHAR(CAST('1970-01-01 00:00:00' AS timestamp) + (FORMCONC.horacierr || ' second')::INTERVAL - '3 hours'::INTERVAL,'HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS fecha_hora_cierre,
+			NOW() - INTERVAL '1 hour' fecha_hora_ahora
         FROM
             WFPROCESS WFP                                                                    
         JOIN
@@ -357,9 +364,12 @@ Esto bajo el supuesto que solamente puede haber una evaluación financiera en ca
                 '' tipo_evaluacion,
                 null cantidad_concursos,
                 null fecha_apertura,
+                NULL fecha_hora_apertura,
                 null fecha_cierre,
+                NULL fecha_hora_cierre,
                 null hora_cierre,
                 null fecha_limite_consultas,
+                NULL fecha_hora_ahora,
                 '' situacion_concurso,
                 '' plazo_concurso,
                 '' id_situacion_concurso,
